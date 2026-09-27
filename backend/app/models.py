@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -27,7 +27,8 @@ class User(Base):
 
 
 class Certificate(Base):
-    """One row per unique certificate file, identified by the SHA-256 of its bytes."""
+    """The genuine-certificate registry. Only admins add rows here (via /api/admin/certificates);
+    a user's upload is checked against this table, never added to it."""
 
     __tablename__ = "certificates"
 
@@ -36,7 +37,10 @@ class Certificate(Base):
     file_name: Mapped[str] = mapped_column(String(255))
     mime_type: Mapped[str] = mapped_column(String(50))
     size: Mapped[int] = mapped_column(Integer)
-    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    holder_name: Mapped[str] = mapped_column(String(120), default="", server_default="")
+    cert_number: Mapped[str | None] = mapped_column(String(80))
+    data: Mapped[bytes | None] = mapped_column(LargeBinary)  # raw file bytes, for preview
+    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"))  # admin who registered it
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -49,5 +53,6 @@ class Check(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     file_name: Mapped[str] = mapped_column(String(255))
     hash: Mapped[str] = mapped_column(String(64))
-    status: Mapped[str] = mapped_column(String(10))  # "original" | "duplicate"
+    status: Mapped[str] = mapped_column(String(15))  # "genuine" | "not_verified"
+    matched_certificate_id: Mapped[int | None] = mapped_column(ForeignKey("certificates.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

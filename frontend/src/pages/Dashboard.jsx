@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../api.js';
+import { api, certificateFileUrl } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { Shell, TopBar } from '../components/Shell.jsx';
+import { AppShell, EmptyState } from '../components/Shell.jsx';
 import { Button } from '../components/Field.jsx';
+import FilePreview, { Thumb } from '../components/FilePreview.jsx';
+import { IconList, IconUpload } from '../components/Icons.jsx';
 
 export const fmt = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const sizeOf = (b) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
@@ -25,6 +27,7 @@ export default function Dashboard() {
   const { token } = useAuth();
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [drag, setDrag] = useState(false);
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
@@ -37,8 +40,17 @@ export default function Dashboard() {
 
   useEffect(loadHistory, [loadHistory]);
 
+  // Preview the locally chosen file before it's ever uploaded.
+  useEffect(() => {
+    if (!file) return undefined;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
   function pick(f) {
     setFile(f || null);
+    if (!f) setPreviewUrl(null);
     setResult(null);
     setError('');
   }
@@ -62,86 +74,105 @@ export default function Dashboard() {
   }
 
   return (
-    <Shell>
-      <div className="page">
-        <TopBar active="verify" />
+    <AppShell
+      active="verify"
+      title="Verify a certificate"
+      subtitle="Upload a PDF, PNG or JPG and we'll match it against the registry of genuine certificates."
+    >
+      <section className="card">
+        <header className="card-head">
+          <h2><IconUpload className="card-ico" /> Upload to verify</h2>
+          <span className="card-note">Max 5 MB</span>
+        </header>
 
-        <section className="glass card rise">
-          <h2>Verify a certificate</h2>
-          <p className="sub">Upload a PDF, PNG or JPG (max 5 MB) and we'll tell you if it's an original or a duplicate.</p>
+        <form onSubmit={submit} className="stack">
+          <div
+            className={`drop ${drag ? 'over' : ''} ${file ? 'has' : ''}`}
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
+          >
+            <input ref={inputRef} type="file" hidden accept="application/pdf,image/png,image/jpeg" onChange={(e) => pick(e.target.files[0])} />
+            {file ? (
+              <>
+                <FilePreview src={previewUrl} mimeType={file.type} height={190} />
+                <p className="drop-file"><strong>{file.name}</strong><span className="sub">{sizeOf(file.size)} · click to change</span></p>
+              </>
+            ) : (
+              <>
+                <span className="drop-ico"><IconUpload /></span>
+                <p className="drop-file"><strong>Drop your certificate here</strong><span className="sub">or click to browse</span></p>
+              </>
+            )}
+          </div>
 
-          <form onSubmit={submit}>
-            <div
-              className={`drop ${drag ? 'over' : ''} ${file ? 'has' : ''}`}
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-              onDragLeave={() => setDrag(false)}
-              onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
-            >
-              <input ref={inputRef} type="file" hidden accept="application/pdf,image/png,image/jpeg" onChange={(e) => pick(e.target.files[0])} />
-              <svg viewBox="0 0 48 48" className="up-ico" aria-hidden="true">
-                <path d="M24 32V10M15 19l9-9 9 9M8 34v4a2 2 0 0 0 2 2h28a2 2 0 0 0 2-2v-4" />
-              </svg>
-              {file ? (
-                <p><strong>{file.name}</strong><br /><span className="sub">{sizeOf(file.size)} · click to change</span></p>
+          {error && <p className="error" key={error}>{error}</p>}
+          <Button busy={busy} disabled={!file}>{busy ? 'Checking…' : 'Verify certificate'}</Button>
+        </form>
+
+        {result && (
+          <div className={`result ${result.status}`} key={result.hash + history.length}>
+            <ResultIcon ok={result.status === 'genuine'} />
+            <div className="result-body">
+              {result.status === 'genuine' ? (
+                <>
+                  <h3>Genuine certificate</h3>
+                  <p>
+                    This matches a certificate registered to <strong>{result.holderName}</strong>
+                    {result.certNumber && <> (No. {result.certNumber})</>}, added on {fmt(result.registeredAt)}.
+                  </p>
+                  {result.hasPreview && (
+                    <FilePreview src={certificateFileUrl(result.certificateId)} mimeType={result.mimeType} height={240} />
+                  )}
+                </>
               ) : (
-                <p><strong>Drop your certificate here</strong><br /><span className="sub">or click to browse</span></p>
+                <>
+                  <h3>Not verified</h3>
+                  <p>This file doesn't match any certificate in the registry. It may be altered, a copy of a copy, or not genuine.</p>
+                </>
               )}
+              <small className="hash">SHA-256 · {result.hash}</small>
             </div>
+          </div>
+        )}
+      </section>
 
-            {error && <p className="error" key={error}>{error}</p>}
-            <Button busy={busy} disabled={!file}>{busy ? 'Checking…' : 'Verify certificate'}</Button>
-          </form>
+      <section className="card">
+        <header className="card-head">
+          <h2><IconList className="card-ico" /> Recent checks</h2>
+          {history.length > 0 && <span className="card-note">{history.length} shown</span>}
+        </header>
 
-          {result && (
-            <div className={`result ${result.status}`} key={result.hash + history.length}>
-              <ResultIcon ok={result.status === 'original'} />
-              <div>
-                {result.status === 'original' ? (
-                  <>
-                    <h3>Original</h3>
-                    <p>This certificate hasn't been seen before. It's now registered under your account.</p>
-                  </>
-                ) : (
-                  <>
-                    <h3>Duplicate</h3>
-                    <p>
-                      This exact certificate was already uploaded {result.firstUploadedByYou ? 'by you' : 'by another user'} on{' '}
-                      {fmt(result.firstUploadedAt)}.
-                    </p>
-                  </>
-                )}
-                <small className="hash">SHA-256 · {result.hash}</small>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="glass card rise d2">
-          <h2>Recent checks</h2>
-          {history.length === 0 ? (
-            <p className="sub">Nothing yet. Your verifications will show up here.</p>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>File</th><th>Result</th><th>When</th></tr></thead>
-                <tbody>
-                  {history.map((c) => (
-                    <tr key={c.id}>
-                      <td className="ellipsis">{c.fileName}</td>
-                      <td><span className={`badge ${c.status}`}>{c.status}</span></td>
-                      <td className="nowrap">{fmt(c.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </div>
-    </Shell>
+        {history.length === 0 ? (
+          <EmptyState text="Nothing yet. Your verifications will show up here." />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr><th>Preview</th><th>File</th><th>Result</th><th>When</th></tr>
+              </thead>
+              <tbody>
+                {history.map((c) => (
+                  <tr key={c.id}>
+                    <td data-label="Preview"><Thumb hasPreview={c.hasPreview} certificateId={c.certificateId} mimeType={c.mimeType} /></td>
+                    <td data-label="File" className="ellipsis">{c.fileName}</td>
+                    <td data-label="Result">
+                      <span className={`badge ${c.status === 'genuine' ? 'genuine' : 'not_verified'}`}>
+                        {c.status === 'genuine' ? 'Genuine' : 'Not verified'}
+                      </span>
+                    </td>
+                    <td data-label="When" className="nowrap muted">{fmt(c.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </AppShell>
   );
 }

@@ -7,13 +7,24 @@ from .models import User
 from .security import check_password, hash_password
 
 
+def _add_column_if_missing(conn, table: str, column: str, ddl: str) -> None:
+    cols = {c["name"] for c in inspect(conn).get_columns(table)}
+    if column not in cols:
+        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
+
+
 def ensure_schema() -> None:
     Base.metadata.create_all(engine)
     # create_all doesn't alter existing tables, so add columns introduced later by hand.
-    cols = {c["name"] for c in inspect(engine).get_columns("users")}
-    if "role" not in cols:
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(10) NOT NULL DEFAULT 'user'"))
+    with engine.begin() as conn:
+        _add_column_if_missing(conn, "users", "role", "role VARCHAR(10) NOT NULL DEFAULT 'user'")
+        _add_column_if_missing(conn, "certificates", "holder_name", "holder_name VARCHAR(120) NOT NULL DEFAULT ''")
+        _add_column_if_missing(conn, "certificates", "cert_number", "cert_number VARCHAR(80)")
+        _add_column_if_missing(conn, "checks", "matched_certificate_id", "matched_certificate_id INTEGER")
+        blob_type = "BLOB" if conn.dialect.name == "sqlite" else "BYTEA"
+        _add_column_if_missing(conn, "certificates", "data", f"data {blob_type}")
+        if conn.dialect.name != "sqlite":  # SQLite doesn't enforce VARCHAR length or support ALTER COLUMN TYPE
+            conn.execute(text("ALTER TABLE checks ALTER COLUMN status TYPE VARCHAR(15)"))
 
 
 def seed_admin() -> None:

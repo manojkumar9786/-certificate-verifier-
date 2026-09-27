@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { AuthCard } from '../components/Shell.jsx';
+import { AuthLayout } from '../components/Shell.jsx';
 import Field, { Button } from '../components/Field.jsx';
 
 export default function Login() {
@@ -36,17 +36,17 @@ export default function Login() {
   }
 
   return (
-    <AuthCard
-      title="Welcome back"
-      subtitle="Sign in to verify your certificates"
+    <AuthLayout
+      title="Sign in"
+      subtitle="Welcome back — verify a certificate in seconds."
       footer={<>New here? <Link to="/register">Create an account</Link></>}
     >
-      <form onSubmit={submit} className="stagger">
-        <Field label="Email address" type="email" value={form.email} onChange={set('email')} required autoComplete="email" />
-        <Field label="Password" type="password" value={form.password} onChange={set('password')} required autoComplete="current-password" />
+      <form onSubmit={submit} className="stack">
+        <Field label="Email address" type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" required autoComplete="email" />
+        <Field label="Password" type="password" value={form.password} onChange={set('password')} placeholder="••••••••" required autoComplete="current-password" />
         {error && <p className="error" key={error}>{error}</p>}
         <Button busy={busy}>{busy ? 'Signing in…' : 'Sign in'}</Button>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }

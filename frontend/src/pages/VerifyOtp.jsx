@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { AuthCard } from '../components/Shell.jsx';
+import { AuthLayout } from '../components/Shell.jsx';
 import { Button } from '../components/Field.jsx';
 import OtpInput from '../components/OtpInput.jsx';
 
@@ -19,7 +19,7 @@ export default function VerifyOtp() {
   const [cooldown, setCooldown] = useState(60);
 
   useEffect(() => {
-    if (cooldown <= 0) return;
+    if (cooldown <= 0) return undefined;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
@@ -56,12 +56,12 @@ export default function VerifyOtp() {
   }
 
   return (
-    <AuthCard
+    <AuthLayout
       title="Check your email"
       subtitle={<>We sent a 6-digit code to <strong>{email}</strong></>}
       footer={<Link to="/login">← Back to sign in</Link>}
     >
-      <form onSubmit={submit} className="stagger">
+      <form onSubmit={submit} className="stack">
         <OtpInput value={otp} onChange={setOtp} />
         {error && <p className="error" key={error}>{error}</p>}
         {info && <p className="success">{info}</p>}
@@ -73,6 +73,6 @@ export default function VerifyOtp() {
           </button>
         </p>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }

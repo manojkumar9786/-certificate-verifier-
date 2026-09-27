@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
-/** Floating-label input. Password fields get a show/hide toggle. */
-export default function Field({ label, type = 'text', ...rest }) {
+/** Labelled text input. Password fields get a show/hide toggle. */
+export default function Field({ label, type = 'text', hint, ...rest }) {
+  const id = useId();
   const [show, setShow] = useState(false);
   const isPassword = type === 'password';
   return (
     <div className="field">
-      <input {...rest} type={isPassword && show ? 'text' : type} placeholder=" " />
-      <label>{label}</label>
-      {isPassword && (
-        <button type="button" className="eye" onClick={() => setShow((s) => !s)} tabIndex={-1}>
-          {show ? 'Hide' : 'Show'}
-        </button>
-      )}
+      <label htmlFor={id}>{label}</label>
+      <div className="field-box">
+        <input id={id} {...rest} type={isPassword && show ? 'text' : type} />
+        {isPassword && (
+          <button type="button" className="eye" onClick={() => setShow((s) => !s)} tabIndex={-1}>
+            {show ? 'Hide' : 'Show'}
+          </button>
+        )}
+      </div>
+      {hint && <small className="field-hint">{hint}</small>}
     </div>
   );
 }
@@ -38,9 +42,9 @@ export function StrengthBar({ password }) {
   );
 }
 
-export function Button({ busy, children, ...rest }) {
+export function Button({ busy, children, variant = 'primary', ...rest }) {
   return (
-    <button className="btn" disabled={busy || rest.disabled} {...rest}>
+    <button className={`btn btn--${variant}`} disabled={busy || rest.disabled} {...rest}>
       {busy && <span className="spin" />}
       <span>{children}</span>
     </button>

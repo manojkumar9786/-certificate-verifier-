@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
-import { AuthCard } from '../components/Shell.jsx';
+import { AuthLayout } from '../components/Shell.jsx';
 import Field, { Button, StrengthBar } from '../components/Field.jsx';
 
 export default function Register() {
@@ -27,21 +27,30 @@ export default function Register() {
   }
 
   return (
-    <AuthCard
+    <AuthLayout
       title="Create your account"
-      subtitle="Verify certificates in seconds"
+      subtitle="It takes a minute — we'll email you a code to confirm it's you."
       footer={<>Already have an account? <Link to="/login">Sign in</Link></>}
     >
-      <form onSubmit={submit} className="stagger">
-        <Field label="Full name" value={form.name} onChange={set('name')} required autoComplete="name" />
-        <Field label="Email address" type="email" value={form.email} onChange={set('email')} required autoComplete="email" />
+      <form onSubmit={submit} className="stack">
+        <Field label="Full name" value={form.name} onChange={set('name')} placeholder="Your name" required autoComplete="name" />
+        <Field label="Email address" type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" required autoComplete="email" />
         <div>
-          <Field label="Password" type="password" value={form.password} onChange={set('password')} required minLength={8} autoComplete="new-password" />
+          <Field
+            label="Password"
+            type="password"
+            value={form.password}
+            onChange={set('password')}
+            placeholder="At least 8 characters"
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
           <StrengthBar password={form.password} />
         </div>
         {error && <p className="error" key={error}>{error}</p>}
         <Button busy={busy}>{busy ? 'Sending code…' : 'Create account'}</Button>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }
