@@ -4,7 +4,7 @@ import { useAuth } from '../auth.jsx';
 import { AppShell, EmptyState } from '../components/Shell.jsx';
 import { Button } from '../components/Field.jsx';
 import FilePreview, { Thumb } from '../components/FilePreview.jsx';
-import { IconList, IconTrash, IconUpload } from '../components/Icons.jsx';
+import { IconCheckCircle, IconList, IconRegistry, IconShieldCheck, IconTrash, IconUpload } from '../components/Icons.jsx';
 
 export const fmt = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const sizeOf = (b) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
@@ -90,8 +90,16 @@ export default function Dashboard() {
   return (
     <AppShell
       active="verify"
-      title="Verify a certificate"
-      subtitle="Upload a PDF, PNG or JPG and we'll match it against the registry of genuine certificates."
+      eyebrow="Verification"
+      title="Check a certificate in seconds"
+      subtitle="Upload a PDF, PNG or JPG. We check it against the samples the issuer registered — both the exact file and the batch it was issued from."
+      header={
+        <div className="trust-strip">
+          <span><IconShieldCheck /> Exact + batch template matching</span>
+          <span><IconRegistry /> Issuer-maintained registry</span>
+          <span><IconCheckCircle /> Instant, tamper-evident result</span>
+        </div>
+      }
     >
       <section className="card">
         <header className="card-head">
@@ -134,19 +142,44 @@ export default function Dashboard() {
             <div className="result-body">
               {result.status === 'genuine' ? (
                 <>
-                  <h3>Genuine certificate</h3>
-                  <p>
-                    This matches a certificate registered to <strong>{result.holderName}</strong>
-                    {result.certNumber && <> (No. {result.certNumber})</>}, added on {fmt(result.registeredAt)}.
-                  </p>
+                  <h3>{result.matchType === 'exact' ? 'Genuine certificate' : 'Genuine — issued format'}</h3>
+                  {result.matchType === 'exact' ? (
+                    <p>
+                      This is the exact certificate registered to <strong>{result.holderName}</strong>
+                      {result.certNumber && <> (No. {result.certNumber})</>}, added on {fmt(result.registeredAt)}.
+                    </p>
+                  ) : (
+                    <p>
+                      This certificate was issued from the registered batch{' '}
+                      <strong>{result.holderName || 'sample'}</strong> — {Math.round(result.similarity * 100)}% match with
+                      the sample added on {fmt(result.registeredAt)}.
+                    </p>
+                  )}
+                  {result.matchType === 'template' && (
+                    <p className="result-note">
+                      The wording and layout match the issuer's template. It does not prove who the certificate
+                      was awarded to — read the name printed on it.
+                    </p>
+                  )}
                   {result.hasPreview && (
-                    <FilePreview src={certificateFileUrl(result.certificateId)} mimeType={result.mimeType} height={240} />
+                    <>
+                      <p className="result-note">Registered sample for comparison:</p>
+                      <FilePreview src={certificateFileUrl(result.certificateId)} mimeType={result.mimeType} height={240} />
+                    </>
                   )}
                 </>
               ) : (
                 <>
                   <h3>Not verified</h3>
-                  <p>This file doesn't match any certificate in the registry. It may be altered, a copy of a copy, or not genuine.</p>
+                  <p>
+                    This file doesn't match any certificate or registered batch. It may be altered, from a different
+                    issuer, or not genuine.
+                  </p>
+                  {result.readable === false && (
+                    <p className="result-note">
+                      We couldn't read any text from this file (scans and images are matched exactly, byte for byte).
+                    </p>
+                  )}
                 </>
               )}
               <small className="hash">SHA-256 · {result.hash}</small>

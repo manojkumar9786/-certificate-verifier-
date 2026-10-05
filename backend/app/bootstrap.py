@@ -3,7 +3,8 @@ from sqlalchemy import inspect, select, text
 
 from . import config
 from .db import Base, SessionLocal, engine
-from .models import User
+from .matching import fingerprint
+from .models import Certificate, User
 from .security import check_password, hash_password
 
 
@@ -23,6 +24,7 @@ def ensure_schema() -> None:
         _add_column_if_missing(conn, "checks", "matched_certificate_id", "matched_certificate_id INTEGER")
         blob_type = "BLOB" if conn.dialect.name == "sqlite" else "BYTEA"
         _add_column_if_missing(conn, "certificates", "data", f"data {blob_type}")
+        _add_column_if_missing(conn, "certificates", "doc_text", "doc_text TEXT")
         if conn.dialect.name != "sqlite":  # SQLite doesn't enforce VARCHAR length or support ALTER COLUMN TYPE
             conn.execute(text("ALTER TABLE checks ALTER COLUMN status TYPE VARCHAR(15)"))
 
@@ -48,6 +50,21 @@ def seed_admin() -> None:
     print(f"Admin account ready: {email}", flush=True)
 
 
+def backfill_fingerprints() -> None:
+    """Certificates registered before template matching existed have no text on
+    file, so read it out of the bytes we already stored."""
+    with SessionLocal() as db:
+        pending = db.scalars(
+            select(Certificate).where(Certificate.doc_text.is_(None), Certificate.data.is_not(None))
+        ).all()
+        for cert in pending:
+            cert.doc_text = fingerprint(cert.data, cert.mime_type) or ""
+        if pending:
+            db.commit()
+            print(f"Fingerprinted {len(pending)} existing certificate(s)", flush=True)
+
+
 def run() -> None:
     ensure_schema()
     seed_admin()
+    backfill_fingerprints()

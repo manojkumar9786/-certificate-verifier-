@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, LargeBinary, String
+from sqlalchemy import DateTime, ForeignKey, Integer, LargeBinary, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -40,6 +40,7 @@ class Certificate(Base):
     holder_name: Mapped[str] = mapped_column(String(120), default="", server_default="")
     cert_number: Mapped[str | None] = mapped_column(String(80))
     data: Mapped[bytes | None] = mapped_column(LargeBinary)  # raw file bytes, for preview
+    doc_text: Mapped[str | None] = mapped_column(Text)  # normalised text, for template matching
     uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"))  # admin who registered it
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

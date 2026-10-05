@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from .. import config
 from ..db import get_db
 from ..errors import ApiError
+from ..matching import fingerprint
 from ..models import Certificate, Check, User
 from ..security import admin_user
 from ..utils import iso
@@ -107,6 +108,7 @@ def register_certificate(
         holder_name=holder_name,
         cert_number=cert_number,
         data=data,
+        doc_text=fingerprint(data, mime),
         uploaded_by=admin.id,
     )
     db.add(cert)

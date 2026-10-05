@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from .. import config
 from ..db import get_db
 from ..errors import ApiError
+from ..matching import TEMPLATE_THRESHOLD, fingerprint, similarity
 from ..models import Certificate, Check, User
 from ..security import current_user
 from ..utils import iso as _iso
@@ -40,13 +41,28 @@ def verify(
     if not data:
         raise ApiError(400, "Please choose a certificate file")
 
-    if _detect_type(data) is None:
+    mime = _detect_type(data)
+    if mime is None:
         raise ApiError(415, "Only PDF, PNG or JPG files are allowed")
 
     digest = hashlib.sha256(data).hexdigest()
     file_name = (certificate.filename or "certificate")[:255]
 
+    # The same file is the strongest answer; failing that, look for a certificate
+    # issued from the same template — that is what batch verification needs.
     match = db.scalar(select(Certificate).where(Certificate.hash == digest))
+    match_type, score, text = ("exact", 1.0, "") if match else (None, 0.0, fingerprint(data, mime))
+
+    if match is None and text:
+        for cert in db.scalars(select(Certificate).where(Certificate.doc_text.is_not(None))):
+            cert_score = similarity(text, cert.doc_text)
+            if cert_score > score:
+                match, score = cert, cert_score
+        if score < TEMPLATE_THRESHOLD:
+            match, score = None, 0.0
+        else:
+            match_type = "template"
+
     status = "genuine" if match else "not_verified"
 
     db.add(
@@ -57,9 +73,11 @@ def verify(
     )
     db.commit()
 
-    result = {"status": status, "hash": digest, "fileName": file_name}
+    result = {"status": status, "hash": digest, "fileName": file_name, "readable": bool(text) or match_type == "exact"}
     if match:
         result.update(
+            matchType=match_type,
+            similarity=round(score, 3),
             certificateId=match.id,
             holderName=match.holder_name,
             certNumber=match.cert_number,

@@ -88,8 +88,9 @@ export default function Admin() {
   return (
     <AppShell
       active="admin"
-      title="Admin dashboard"
-      subtitle="Manage the registry of genuine certificates and see who's using CertVerify."
+      eyebrow="Administration"
+      title="Registry control"
+      subtitle="Add the certificates your institution issued, and see every account and check running through CertVerify."
     >
       {error && <p className="error">{error}</p>}
 
@@ -107,15 +108,18 @@ export default function Admin() {
 
       <section className="card">
         <header className="card-head">
-          <h2><IconPlus className="card-ico" /> Register a genuine certificate</h2>
+          <h2><IconPlus className="card-ico" /> Register a sample certificate</h2>
         </header>
-        <p className="sub">Only certificates added here will verify as "Genuine" when a user uploads them.</p>
+        <p className="sub">
+          Upload one sample from a batch. Every certificate issued from the same template — same wording and
+          layout, different name — will then verify as genuine.
+        </p>
 
         <form onSubmit={register} className="reg-form">
-          <Field label="Holder name" value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="e.g. Rahul Verma" required />
-          <Field label="Certificate number" value={certNumber} onChange={(e) => setCertNumber(e.target.value)} placeholder="Optional" />
+          <Field label="Certificate / batch name" value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="e.g. Hackathon 2026 — Participation" required />
+          <Field label="Reference number" value={certNumber} onChange={(e) => setCertNumber(e.target.value)} placeholder="Optional" />
           <div className="field field--file">
-            <label htmlFor="cert-file">Certificate file</label>
+            <label htmlFor="cert-file">Sample certificate file</label>
             <input
               id="cert-file"
               ref={inputRef}
@@ -124,10 +128,10 @@ export default function Admin() {
               onChange={(e) => setFile(e.target.files[0] || null)}
               required
             />
-            <small className="field-hint">PDF, PNG or JPG · max 5 MB</small>
+            <small className="field-hint">PDF, PNG or JPG · max 5 MB · text-based PDFs match a whole batch; images and scans match exactly only</small>
           </div>
           <div className="reg-actions">
-            <Button busy={busy} disabled={!file || !holderName.trim()}>{busy ? 'Registering…' : 'Register certificate'}</Button>
+            <Button busy={busy} disabled={!file || !holderName.trim()}>{busy ? 'Registering…' : 'Register sample'}</Button>
             {info && <p className="success">{info}</p>}
           </div>
         </form>
