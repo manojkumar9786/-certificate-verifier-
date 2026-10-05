@@ -92,8 +92,12 @@ def register_certificate(
         raise ApiError(415, "Only PDF, PNG or JPG files are allowed")
 
     digest = hashlib.sha256(data).hexdigest()
-    if db.scalar(select(Certificate).where(Certificate.hash == digest)):
-        raise ApiError(409, "This exact file is already registered")
+    existing = db.scalar(select(Certificate).where(Certificate.hash == digest))
+    if existing:
+        # The same bytes can only belong to one holder, so name who holds it already —
+        # otherwise an admin registering a copied file has no idea why it was refused.
+        who = existing.holder_name or "another holder"
+        raise ApiError(409, f"This exact file is already registered to {who}")
 
     cert = Certificate(
         hash=digest,
