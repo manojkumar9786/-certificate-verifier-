@@ -4,7 +4,7 @@ import { useAuth } from '../auth.jsx';
 import { AppShell, EmptyState } from '../components/Shell.jsx';
 import { Button } from '../components/Field.jsx';
 import FilePreview, { Thumb } from '../components/FilePreview.jsx';
-import { IconList, IconUpload } from '../components/Icons.jsx';
+import { IconList, IconTrash, IconUpload } from '../components/Icons.jsx';
 
 export const fmt = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const sizeOf = (b) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const loadHistory = useCallback(() => {
     api('/certificates/history', { token }).then((d) => setHistory(d.checks)).catch(() => {});
@@ -53,6 +54,19 @@ export default function Dashboard() {
     if (!f) setPreviewUrl(null);
     setResult(null);
     setError('');
+  }
+
+  async function clearHistory() {
+    if (!window.confirm('Clear your check history? Registered certificates are not affected.')) return;
+    setClearing(true);
+    try {
+      await api('/certificates/history', { method: 'DELETE', token });
+      setHistory([]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setClearing(false);
+    }
   }
 
   async function submit(e) {
@@ -144,7 +158,14 @@ export default function Dashboard() {
       <section className="card">
         <header className="card-head">
           <h2><IconList className="card-ico" /> Recent checks</h2>
-          {history.length > 0 && <span className="card-note">{history.length} shown</span>}
+          {history.length > 0 && (
+            <span className="card-actions">
+              <span className="card-note">{history.length} shown</span>
+              <button type="button" className="ghost" onClick={clearHistory} disabled={clearing}>
+                <IconTrash /> <span>{clearing ? 'Clearing…' : 'Clear'}</span>
+              </button>
+            </span>
+          )}
         </header>
 
         {history.length === 0 ? (

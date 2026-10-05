@@ -709,3 +709,24 @@ a:hover > .thumb { transform: translateY(-1px); box-shadow: var(--sh-md); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* card header actions (e.g. Clear history) */
+.card-actions { display: flex; align-items: center; gap: 0.6rem; flex: none; }
+.card-actions button.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.34rem 0.7rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.card-actions button.ghost svg { width: 14px; height: 14px; }
+.card-actions button.ghost:hover:not(:disabled) { color: var(--err); border-color: var(--err-line); background: var(--err-bg); }
+.card-actions button.ghost:disabled { opacity: 0.6; cursor: not-allowed; }
+@media (max-width: 540px) { .card-actions { width: 100%; justify-content: space-between; } }

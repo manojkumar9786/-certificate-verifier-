@@ -1,7 +1,7 @@
 import hashlib
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import config
@@ -99,3 +99,11 @@ def history(user: User = Depends(current_user), db: Session = Depends(get_db)):
             for c, mime, has_preview in rows
         ]
     }
+
+
+@router.delete("/history")
+def clear_history(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Clears the signed-in user's own check history. The registry itself is untouched."""
+    removed = db.execute(delete(Check).where(Check.user_id == user.id)).rowcount
+    db.commit()
+    return {"deleted": removed}
