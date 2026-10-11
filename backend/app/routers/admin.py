@@ -1,4 +1,6 @@
 import hashlib
+from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy import func, select
@@ -9,6 +11,7 @@ from ..db import get_db
 from ..errors import ApiError
 from ..matching import fingerprint
 from ..models import Certificate, Check, User
+from ..qrscan import extract_qr_codes
 from ..security import admin_user
 from ..utils import iso
 from .certificates import _detect_type
@@ -26,6 +29,65 @@ def stats(db: Session = Depends(get_db)):
         "checks": count(select(func.count(Check.id))),
         "genuineMatches": count(select(func.count(Check.id)).where(Check.status == "genuine")),
         "notVerified": count(select(func.count(Check.id)).where(Check.status == "not_verified")),
+    }
+
+
+@router.get("/analytics")
+def analytics(db: Session = Depends(get_db)):
+    """Daily counts for the last 14 days, for the admin charts. Bucketed in Python
+    rather than with a DB-specific date-trunc function, so this runs the same on
+    SQLite (local/dev) and Postgres (production)."""
+    days = 14
+    today = datetime.now(timezone.utc).date()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    labels = [(today - timedelta(days=i)).isoformat() for i in range(days - 1, -1, -1)]
+
+    checks = db.scalars(select(Check).where(Check.created_at >= cutoff)).all()
+    genuine_by_day = Counter()
+    not_verified_by_day = Counter()
+    for c in checks:
+        day = iso(c.created_at)[:10]
+        (genuine_by_day if c.status == "genuine" else not_verified_by_day)[day] += 1
+
+    signups = db.scalars(select(User).where(User.created_at >= cutoff)).all()
+    signups_by_day = Counter(iso(u.created_at)[:10] for u in signups)
+
+    match_types = Counter()
+    match_rows = db.execute(
+        select(Check.hash, Certificate.hash)
+        .join(Certificate, Certificate.id == Check.matched_certificate_id)
+    ).all()
+    for check_hash, cert_hash in match_rows:
+        match_types["exact" if check_hash == cert_hash else "template"] += 1
+
+    return {
+        "days": labels,
+        "genuine": [genuine_by_day[d] for d in labels],
+        "notVerified": [not_verified_by_day[d] for d in labels],
+        "signups": [signups_by_day[d] for d in labels],
+        "matchTypes": {"exact": match_types["exact"], "template": match_types["template"]},
+    }
+
+
+@router.get("/checks")
+def all_checks(db: Session = Depends(get_db)):
+    """Full audit trail: every verification attempt by every user, newest first."""
+    rows = db.execute(
+        select(Check, User.name, User.email, Certificate.holder_name)
+        .join(User, User.id == Check.user_id)
+        .outerjoin(Certificate, Certificate.id == Check.matched_certificate_id)
+        .order_by(Check.created_at.desc(), Check.id.desc())
+        .limit(500)
+    ).all()
+    return {
+        "checks": [
+            {
+                "id": c.id, "fileName": c.file_name, "hash": c.hash, "status": c.status,
+                "userName": name, "userEmail": email, "matchedHolder": holder,
+                "createdAt": iso(c.created_at),
+            }
+            for c, name, email, holder in rows
+        ]
     }
 
 
@@ -113,7 +175,10 @@ def register_certificate(
     )
     db.add(cert)
     db.commit()
-    return {"id": cert.id, "hash": cert.hash, "holderName": cert.holder_name, "certNumber": cert.cert_number}
+    return {
+        "id": cert.id, "hash": cert.hash, "holderName": cert.holder_name, "certNumber": cert.cert_number,
+        "embeddedQrCodes": extract_qr_codes(data, mime),
+    }
 
 
 @router.delete("/certificates/{cert_id}")

@@ -1,6 +1,16 @@
 # Certificate Verifier
 
-Register → email OTP verification → login → upload a certificate (PDF/PNG/JPG) → get **Original** or **Duplicate**.
+Register → email OTP verification → login → upload a certificate (PDF/PNG/JPG) → get **Genuine** or **Not verified**,
+checked against an issuer-maintained registry by exact fingerprint and by issued template.
+
+A public landing page (`/`) explains the product to signed-out visitors, and every registered
+certificate gets a QR code + no-login public link (`/c/:id`) so an employer can confirm it without
+an account. Admins get an analytics dashboard (`/admin/analytics`) and a full audit log
+(`/admin/audit`, exportable as CSV) on top of the registry screen (`/admin`).
+
+Every upload is also scanned for a QR code printed on the certificate itself (e.g. the issuer's own
+verification QR) using OpenCV + PyMuPDF — decoded and shown alongside our own hash/template result
+as a second, independent signal. See `backend/app/qrscan.py`.
 
 | Part | Tech | Free host |
 |---|---|---|
@@ -9,7 +19,10 @@ Register → email OTP verification → login → upload a certificate (PDF/PNG/
 | Database | PostgreSQL | Neon |
 | OTP email | Brevo HTTP API | Brevo (300 mails/day) |
 
-**How duplicate detection works:** the SHA-256 hash of the uploaded file is stored. First time a hash is seen → *Original* (registered). Same hash again (by anyone) → *Duplicate*. Only the hash and file name are stored, not the file.
+**How matching works:** the SHA-256 hash of the uploaded file is checked against the registry first
+(exact match). If that misses, the file's text is compared against every registered certificate's
+text to catch a different file issued from the same template (batch match). Only the hash and
+normalised text are stored for matching, never used to alter or recreate the original file.
 
 ---
 
@@ -83,6 +96,7 @@ Tables are created automatically on the first backend start.
 ---
 
 ## Ideas to extend
-- Issuer/admin role that pre-registers genuine certificates, so "original" means "issued by the institution".
-- Near-duplicate detection (perceptual hash for images, text extraction/OCR for PDFs), since re-saving or screenshotting changes the file hash.
+- OCR for scanned image certificates (Tesseract), so batch/template matching also works for PNG/JPG — right now only text-based PDFs get template matching; images and scans must match exactly.
+- Downloadable PDF verification report ("Verified by CertVerify on <date>") as shareable proof of a check.
+- Fraud alerts: email the admin when the same holder name gets repeated "not verified" hits.
 - Rate limiting (e.g. `slowapi`) on login/register.

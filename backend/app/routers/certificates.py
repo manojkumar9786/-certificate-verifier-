@@ -9,6 +9,7 @@ from ..db import get_db
 from ..errors import ApiError
 from ..matching import TEMPLATE_THRESHOLD, fingerprint, similarity
 from ..models import Certificate, Check, User
+from ..qrscan import extract_qr_codes
 from ..security import current_user
 from ..utils import iso as _iso
 
@@ -73,7 +74,11 @@ def verify(
     )
     db.commit()
 
-    result = {"status": status, "hash": digest, "fileName": file_name, "readable": bool(text) or match_type == "exact"}
+    result = {
+        "status": status, "hash": digest, "fileName": file_name,
+        "readable": bool(text) or match_type == "exact",
+        "embeddedQrCodes": extract_qr_codes(data, mime),
+    }
     if match:
         result.update(
             matchType=match_type,
@@ -96,6 +101,26 @@ def certificate_file(cert_id: int, db: Session = Depends(get_db)):
     if cert is None or not cert.data:
         raise ApiError(404, "No preview available")
     return Response(content=cert.data, media_type=cert.mime_type)
+
+
+@router.get("/{cert_id}/public")
+def public_lookup(cert_id: int, db: Session = Depends(get_db)):
+    """Looks up a registry entry by id with no login — this is what the QR code on a
+    verified certificate points to, so an employer can confirm it without an account."""
+    cert = db.get(Certificate, cert_id)
+    if cert is None:
+        raise ApiError(404, "No certificate registered with this ID")
+    return {
+        "id": cert.id,
+        "fileName": cert.file_name,
+        "holderName": cert.holder_name,
+        "certNumber": cert.cert_number,
+        "mimeType": cert.mime_type,
+        "hasPreview": cert.data is not None,
+        "hash": cert.hash,
+        "registeredAt": _iso(cert.created_at),
+        "embeddedQrCodes": extract_qr_codes(cert.data, cert.mime_type) if cert.data else [],
+    }
 
 
 @router.get("/history")

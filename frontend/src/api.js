@@ -1,6 +1,7 @@
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const certificateFileUrl = (id) => `${BASE}/api/certificates/${id}/file`;
+export const publicVerifyUrl = (id) => `${window.location.origin}/c/${id}`;
 
 export async function api(path, { method = 'GET', body, form, token } = {}) {
   const headers = {};

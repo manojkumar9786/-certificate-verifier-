@@ -51,3 +51,44 @@ export const IconTrash = (p) => (
 export const IconFile = (p) => (
   <svg {...base} {...p}><path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5L13.5 3Z" /><path d="M13.5 3v5.5H19" /></svg>
 );
+export const IconQrCode = (p) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1" /><rect x="14" y="3.5" width="6.5" height="6.5" rx="1" />
+    <rect x="3.5" y="14" width="6.5" height="6.5" rx="1" />
+    <path d="M14 14.2h3M14 17.5h6.5M14 20.5h3M20.5 14v3M17.5 17.5v3" />
+  </svg>
+);
+export const IconBarChart = (p) => (
+  <svg {...base} {...p}><path d="M4 20V10M10.5 20V4M17 20v-7" /><path d="M3 20h18" /></svg>
+);
+export const IconDownload = (p) => (
+  <svg {...base} {...p}><path d="M12 3v12M7 10.5l5 5 5-5" /><path d="M4.5 17v2A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5v-2" /></svg>
+);
+export const IconCopy = (p) => (
+  <svg {...base} {...p}><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="1.8" /><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H5.5A1.5 1.5 0 0 0 4 6v8.5A1.5 1.5 0 0 0 5.5 16H8" /></svg>
+);
+export const IconClock = (p) => (
+  <svg {...base} {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3.2 2" /></svg>
+);
+export const IconExternalLink = (p) => (
+  <svg {...base} {...p}><path d="M9 6H6.5A2.5 2.5 0 0 0 4 8.5v9A2.5 2.5 0 0 0 6.5 20h9a2.5 2.5 0 0 0 2.5-2.5V15" /><path d="M14 4h6v6M20 4 11 13" /></svg>
+);
+export const IconSparkles = (p) => (
+  <svg {...base} {...p}><path d="M12 3v4M12 17v4M4.5 12h4M15.5 12h4M6.5 6.5l2.6 2.6M14.9 14.9l2.6 2.6M17.5 6.5l-2.6 2.6M9.1 14.9l-2.6 2.6" /></svg>
+);
+
+/** Large result glyph for a verify outcome — the drawn check/warn mark used on both
+ * the signed-in dashboard and the public verify page, so the two stay visually identical. */
+export function IconResult({ ok }) {
+  return ok ? (
+    <svg className="ricon ok" viewBox="0 0 52 52" aria-hidden="true">
+      <circle cx="26" cy="26" r="24" />
+      <path d="m15 27 8 8 15-16" />
+    </svg>
+  ) : (
+    <svg className="ricon warn" viewBox="0 0 52 52" aria-hidden="true">
+      <circle cx="26" cy="26" r="24" />
+      <path d="M26 14v16M26 37v1" />
+    </svg>
+  );
+}

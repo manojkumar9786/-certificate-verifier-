@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
-import { IconClose, IconInbox, IconLogout, IconMenu, IconRegistry, IconShieldCheck } from './Icons.jsx';
+import { IconBarChart, IconClock, IconClose, IconInbox, IconLogout, IconMenu, IconRegistry, IconShieldCheck } from './Icons.jsx';
 
 export function Logo({ size = 30 }) {
   return (
@@ -110,7 +110,9 @@ export function AppShell({ active, eyebrow, title, subtitle, header, children })
 
           <nav className="nav-links">
             <NavItem to="/" active={active === 'verify'} icon={IconShieldCheck} label="Verify" onClick={close} />
-            {isAdmin && <NavItem to="/admin" active={active === 'admin'} icon={IconRegistry} label="Admin" onClick={close} />}
+            {isAdmin && <NavItem to="/admin" active={active === 'admin'} icon={IconRegistry} label="Registry" onClick={close} />}
+            {isAdmin && <NavItem to="/admin/analytics" active={active === 'analytics'} icon={IconBarChart} label="Analytics" onClick={close} />}
+            {isAdmin && <NavItem to="/admin/audit" active={active === 'audit'} icon={IconClock} label="Audit" onClick={close} />}
           </nav>
 
           <div className="topnav-end">
@@ -128,7 +130,9 @@ export function AppShell({ active, eyebrow, title, subtitle, header, children })
 
         <div className="nav-sheet">
           <NavItem to="/" active={active === 'verify'} icon={IconShieldCheck} label="Verify" onClick={close} />
-          {isAdmin && <NavItem to="/admin" active={active === 'admin'} icon={IconRegistry} label="Admin" onClick={close} />}
+          {isAdmin && <NavItem to="/admin" active={active === 'admin'} icon={IconRegistry} label="Registry" onClick={close} />}
+          {isAdmin && <NavItem to="/admin/analytics" active={active === 'analytics'} icon={IconBarChart} label="Analytics" onClick={close} />}
+          {isAdmin && <NavItem to="/admin/audit" active={active === 'audit'} icon={IconClock} label="Audit" onClick={close} />}
           <button className="sheet-logout" onClick={logout}><IconLogout /> <span>Log out</span></button>
         </div>
       </header>

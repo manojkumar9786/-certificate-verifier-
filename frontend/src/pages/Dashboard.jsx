@@ -4,24 +4,11 @@ import { useAuth } from '../auth.jsx';
 import { AppShell, EmptyState } from '../components/Shell.jsx';
 import { Button } from '../components/Field.jsx';
 import FilePreview, { Thumb } from '../components/FilePreview.jsx';
-import { IconCheckCircle, IconList, IconRegistry, IconShieldCheck, IconTrash, IconUpload } from '../components/Icons.jsx';
+import QrFound from '../components/QrFound.jsx';
+import { IconCheckCircle, IconList, IconRegistry, IconResult, IconShieldCheck, IconTrash, IconUpload } from '../components/Icons.jsx';
 
 export const fmt = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const sizeOf = (b) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
-
-function ResultIcon({ ok }) {
-  return ok ? (
-    <svg className="ricon ok" viewBox="0 0 52 52" aria-hidden="true">
-      <circle cx="26" cy="26" r="24" />
-      <path d="m15 27 8 8 15-16" />
-    </svg>
-  ) : (
-    <svg className="ricon warn" viewBox="0 0 52 52" aria-hidden="true">
-      <circle cx="26" cy="26" r="24" />
-      <path d="M26 14v16M26 37v1" />
-    </svg>
-  );
-}
 
 export default function Dashboard() {
   const { token } = useAuth();
@@ -138,7 +125,7 @@ export default function Dashboard() {
 
         {result && (
           <div className={`result ${result.status}`} key={result.hash + history.length}>
-            <ResultIcon ok={result.status === 'genuine'} />
+            <IconResult ok={result.status === 'genuine'} />
             <div className="result-body">
               {result.status === 'genuine' ? (
                 <>
@@ -182,6 +169,7 @@ export default function Dashboard() {
                   )}
                 </>
               )}
+              <QrFound codes={result.embeddedQrCodes} />
               <small className="hash">SHA-256 · {result.hash}</small>
             </div>
           </div>

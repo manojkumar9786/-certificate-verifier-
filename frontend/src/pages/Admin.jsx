@@ -4,9 +4,11 @@ import { useAuth } from '../auth.jsx';
 import { AppShell, EmptyState } from '../components/Shell.jsx';
 import Field, { Button } from '../components/Field.jsx';
 import { Thumb } from '../components/FilePreview.jsx';
+import Modal from '../components/Modal.jsx';
+import QrPanel from '../components/QrPanel.jsx';
 import {
   IconAlertTriangle, IconCheckCircle, IconList, IconPlus,
-  IconRegistry, IconShieldCheck, IconTrash, IconUsers,
+  IconQrCode, IconRegistry, IconShieldCheck, IconTrash, IconUsers,
 } from '../components/Icons.jsx';
 import { fmt } from './Dashboard.jsx';
 
@@ -32,6 +34,7 @@ export default function Admin() {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState('');
+  const [qrCert, setQrCert] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,8 +64,11 @@ export default function Admin() {
       form.append('certificate', file);
       form.append('holder_name', holderName.trim());
       form.append('cert_number', certNumber.trim());
-      await api('/admin/certificates', { method: 'POST', form, token });
-      setInfo(`Registered "${file.name}" for ${holderName.trim()}.`);
+      const added = await api('/admin/certificates', { method: 'POST', form, token });
+      const qrNote = added.embeddedQrCodes?.length
+        ? ` It also has its own embedded QR code${added.embeddedQrCodes.length > 1 ? 's' : ''} — visible on the Verify screen when checked.`
+        : '';
+      setInfo(`Registered "${file.name}" for ${holderName.trim()}.${qrNote}`);
       setHolderName('');
       setCertNumber('');
       setFile(null);
@@ -161,6 +167,7 @@ export default function Admin() {
                     <td data-label="Hash" className="mono" title={c.hash}>{c.hash.slice(0, 10)}…</td>
                     <td data-label="Registered" className="nowrap muted">{fmt(c.createdAt)}</td>
                     <td data-label="" className="row-actions">
+                      <button type="button" className="ghost" onClick={() => setQrCert(c)}><IconQrCode /> <span>QR</span></button>
                       <button className="danger" onClick={() => remove(c)}><IconTrash /> <span>Delete</span></button>
                     </td>
                   </tr>
@@ -202,6 +209,12 @@ export default function Admin() {
           </div>
         )}
       </section>
+
+      {qrCert && (
+        <Modal title={`Verify link — ${qrCert.holderName || qrCert.fileName}`} onClose={() => setQrCert(null)}>
+          <QrPanel certId={qrCert.id} />
+        </Modal>
+      )}
     </AppShell>
   );
 }
