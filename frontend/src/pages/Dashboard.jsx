@@ -5,6 +5,7 @@ import { AppShell, EmptyState } from '../components/Shell.jsx';
 import { Button } from '../components/Field.jsx';
 import FilePreview, { Thumb } from '../components/FilePreview.jsx';
 import QrFound from '../components/QrFound.jsx';
+import AiCheck from '../components/AiCheck.jsx';
 import { IconCheckCircle, IconList, IconRegistry, IconResult, IconShieldCheck, IconTrash, IconUpload } from '../components/Icons.jsx';
 
 export const fmt = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -171,6 +172,7 @@ export default function Dashboard() {
               )}
               <QrFound codes={result.embeddedQrCodes} />
               <small className="hash">SHA-256 · {result.hash}</small>
+              {file && <AiCheck key={result.hash} file={file} token={token} />}
             </div>
           </div>
         )}

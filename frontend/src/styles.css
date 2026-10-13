@@ -740,6 +740,34 @@ a:hover > .thumb { transform: translateY(-2px); box-shadow: var(--sh-md); }
 .qr-found-list { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
 .qr-found-list li { font-size: 0.85rem; word-break: break-all; }
 
+.ai-check-btn { margin-top: 0.8rem; }
+.ai-check-btn svg { color: var(--accent); }
+.ai-check {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  display: grid;
+  gap: 0.35rem;
+}
+.ai-check-head { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; font-size: 0.88rem; color: var(--ink); }
+.ai-check-head svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
+.beta-pill {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ai-flag-list { list-style: disc; margin: 0.2rem 0 0; padding-left: 1.2rem; display: grid; gap: 0.2rem; }
+.ai-flag-list li { font-size: 0.88rem; color: var(--ink-2); }
+.ai-check-caveat { font-size: 0.78rem; color: var(--ink-3); font-style: italic; margin-top: 0.2rem; }
+
 .row-actions button + button { margin-left: 0.5rem; }
 .who-stack { display: grid; gap: 0.1rem; }
 .who-stack .muted { font-size: 0.78rem; }

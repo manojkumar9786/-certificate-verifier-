@@ -31,6 +31,8 @@ BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 MAIL_FROM = os.environ.get("MAIL_FROM", "")
 MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "Certificate Verifier")
 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
 # If both are set, this account is created/updated as a verified admin on every startup.
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").strip().lower()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")

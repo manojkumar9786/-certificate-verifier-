@@ -5,6 +5,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .. import config
+from ..ai_check import run_ai_check
 from ..db import get_db
 from ..errors import ApiError
 from ..matching import TEMPLATE_THRESHOLD, fingerprint, similarity
@@ -91,6 +92,29 @@ def verify(
             hasPreview=match.data is not None,
         )
     return result
+
+
+@router.post("/ai-check")
+def ai_check(
+    certificate: UploadFile = File(...),
+    user: User = Depends(current_user),
+):
+    """Experimental: an AI opinion on visual plausibility only - not a verification, and
+    not based on any registry. Always a secondary signal shown next to the real result."""
+    data = certificate.file.read(config.MAX_UPLOAD_BYTES + 1)
+    if len(data) > config.MAX_UPLOAD_BYTES:
+        raise ApiError(413, "File too large (max 5 MB)")
+    if not data:
+        raise ApiError(400, "Please choose a certificate file")
+
+    mime = _detect_type(data)
+    if mime is None:
+        raise ApiError(415, "Only PDF, PNG or JPG files are allowed")
+
+    try:
+        return run_ai_check(data, mime)
+    except RuntimeError as e:
+        raise ApiError(503, str(e))
 
 
 @router.get("/{cert_id}/file")

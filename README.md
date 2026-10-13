@@ -12,6 +12,14 @@ Every upload is also scanned for a QR code printed on the certificate itself (e.
 verification QR) using OpenCV + PyMuPDF — decoded and shown alongside our own hash/template result
 as a second, independent signal. See `backend/app/qrscan.py`.
 
+An optional **AI plausibility check** (`backend/app/ai_check.py`, needs `GEMINI_API_KEY` - Google's
+free tier, no card needed) sends a downscaled image of the upload to Gemini Flash and asks only
+whether it *looks* visually consistent — font/alignment/spelling/colour issues. This is explicitly
+not a verification: there is no database of genuine government IDs to compare against, so no system
+(ours or anyone else's) can prove a never-registered document is real from the file alone. The UI
+labels this result "beta" and an AI opinion, never genuine/fake, and it's a separate, optional action
+next to the real registry check.
+
 | Part | Tech | Free host |
 |---|---|---|
 | Frontend | React (Vite) | Vercel |
