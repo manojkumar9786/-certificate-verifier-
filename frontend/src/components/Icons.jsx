@@ -73,6 +73,12 @@ export const IconClock = (p) => (
 export const IconExternalLink = (p) => (
   <svg {...base} {...p}><path d="M9 6H6.5A2.5 2.5 0 0 0 4 8.5v9A2.5 2.5 0 0 0 6.5 20h9a2.5 2.5 0 0 0 2.5-2.5V15" /><path d="M14 4h6v6M20 4 11 13" /></svg>
 );
+export const IconChat = (p) => (
+  <svg {...base} {...p}><path d="M4 5.5h16v11H9l-4 3.5v-3.5H4v-11Z" /><path d="M8 9.5h8M8 13h5" /></svg>
+);
+export const IconSend = (p) => (
+  <svg {...base} {...p}><path d="m4 12 16-7.5L13 20l-2-7-7-1Z" /></svg>
+);
 export const IconLink = (p) => (
   <svg {...base} {...p}><path d="M9.5 14.5 14.5 9.5" /><path d="M8 16.5 5.8 18.7a3 3 0 1 1-4.2-4.2L3.8 12.3" /><path d="M16 7.5l2.2-2.2a3 3 0 1 1 4.2 4.2L20.2 11.7" /></svg>
 );

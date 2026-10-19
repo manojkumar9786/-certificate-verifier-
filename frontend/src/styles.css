@@ -972,3 +972,105 @@ a:hover > .thumb { transform: translateY(-2px); box-shadow: var(--sh-md); }
   .landing-steps { grid-template-columns: 1fr; }
   .analytics-row { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   chat assistant
+   ============================================================ */
+.chat-widget { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 60; }
+.chat-fab {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  border: none;
+  background: var(--brand);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--sh-md);
+  transition: background 0.18s, transform 0.14s var(--ease);
+}
+.chat-fab:hover { background: var(--brand-hover); transform: translateY(-1px); }
+.chat-fab svg { width: 24px; height: 24px; }
+
+.chat-panel {
+  position: absolute;
+  right: 0;
+  bottom: 66px;
+  width: min(340px, calc(100vw - 2.5rem));
+  height: min(460px, calc(100vh - 7rem));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  font-size: 0.92rem;
+  flex-shrink: 0;
+}
+.chat-head span { display: flex; align-items: center; gap: 0.5rem; }
+.chat-head svg { width: 18px; height: 18px; }
+
+.chat-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.chat-msg { max-width: 85%; padding: 0.55rem 0.8rem; border-radius: var(--r-md); font-size: 0.88rem; line-height: 1.45; white-space: pre-wrap; }
+.chat-msg--assistant { background: var(--surface-2); border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
+.chat-msg--user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-msg--typing { color: var(--ink-3); font-style: italic; }
+
+.chat-error { padding: 0 1rem 0.5rem; margin: 0; font-size: 0.8rem; flex-shrink: 0; }
+
+.chat-input { display: flex; gap: 0.5rem; padding: 0.75rem; border-top: 1px solid var(--line); flex-shrink: 0; }
+.chat-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.chat-input input::placeholder { color: var(--ink-3); }
+.chat-input input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.chat-input button {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: none;
+  background: var(--brand);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chat-input button:hover:not(:disabled) { background: var(--brand-hover); }
+.chat-input button:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-input button svg { width: 16px; height: 16px; }
+
+/* Phone: fab sits above the mobile nav/thumb zone, panel fills nearly the full
+   viewport instead of floating as a small card, and inputs stay >=16px to stop iOS
+   Safari auto-zooming on focus. */
+@media (max-width: 720px) {
+  .chat-widget { right: 0.75rem; bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); }
+  .chat-panel {
+    position: fixed;
+    right: 0.6rem;
+    left: 0.6rem;
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    height: min(72vh, 520px);
+  }
+  .chat-input input { font-size: 16px; }
+}

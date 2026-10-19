@@ -14,7 +14,9 @@ import numpy as np
 
 from . import config
 
-MODEL = "gemini-3.6-flash"
+MODEL = "gemini-2.5-flash-lite"  # free tier's daily cap here is far higher than the
+# newer gemini-3.6-flash's 20 requests/day, which this app's AI check, OCR auto-fill
+# and chat assistant would otherwise burn through almost immediately between them
 MAX_DIM = 1024  # keep the image small - vision tokens scale with pixel area
 JPEG_QUALITY = 70
 MAX_OUTPUT_TOKENS = 400  # thinking (even at "minimal") plus the JSON answer both count here
@@ -79,14 +81,10 @@ def _generate(jpeg_b64: str, prompt: str, max_tokens: int) -> str | None:
                     {"text": prompt},
                 ],
             }],
-            "generationConfig": {
-                "maxOutputTokens": max_tokens,
-                # Gemini 3's thinking can't be fully disabled, only turned down - without
-                # this, reasoning tokens alone can exceed maxOutputTokens and leave no
-                # room for the actual JSON answer (seen in testing: MAX_TOKENS with an
-                # empty/truncated response).
-                "thinkingConfig": {"thinkingLevel": "minimal"},
-            },
+            # gemini-2.5-flash-lite doesn't support thinkingConfig at all (400s if sent) -
+            # unlike gemini-3's models it isn't a reasoning model by default, so there's
+            # no "thinking tokens eat maxOutputTokens" problem to work around here.
+            "generationConfig": {"maxOutputTokens": max_tokens},
         },
         timeout=30,
     )

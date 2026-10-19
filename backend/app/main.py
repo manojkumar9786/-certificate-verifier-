@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from . import bootstrap, config
 from .errors import ApiError
-from .routers import admin, auth, certificates
+from .routers import admin, assistant, auth, certificates
 
 
 @asynccontextmanager
@@ -50,3 +50,4 @@ def health():
 app.include_router(auth.router)
 app.include_router(certificates.router)
 app.include_router(admin.router)
+app.include_router(assistant.router)

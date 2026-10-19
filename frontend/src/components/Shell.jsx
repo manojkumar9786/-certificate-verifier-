@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
+import ChatWidget from './ChatWidget.jsx';
 import { IconBarChart, IconClock, IconClose, IconInbox, IconLogout, IconMenu, IconRegistry, IconShieldCheck } from './Icons.jsx';
 
 export function Logo({ size = 30 }) {
@@ -146,6 +147,8 @@ export function AppShell({ active, eyebrow, title, subtitle, header, children })
         <IconShieldCheck />
         <span>Certificates are matched by exact fingerprint and by issued template against an issuer-maintained registry.</span>
       </footer>
+
+      <ChatWidget />
     </div>
   );
 }
