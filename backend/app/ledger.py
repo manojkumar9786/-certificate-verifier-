@@ -37,6 +37,11 @@ def append_block(db: Session, certificate_id: int, cert_hash: str, holder_name: 
         created_at=created_at,
     )
     db.add(block)
+    # Sessions here run with autoflush=False (see db.py), so without this, a second
+    # append_block() call in the same session - e.g. the backfill loop - would still
+    # see an empty table via the SELECT above and reuse idx 0, duplicate-key-crashing
+    # the whole app on commit instead of just this block.
+    db.flush()
     return block
 
 
