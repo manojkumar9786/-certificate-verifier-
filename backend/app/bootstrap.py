@@ -1,10 +1,11 @@
 """Startup tasks: create tables, add newer columns to existing tables, seed the admin account."""
-from sqlalchemy import inspect, select, text
+from sqlalchemy import func, inspect, select, text
 
 from . import config
 from .db import Base, SessionLocal, engine
+from .ledger import append_block
 from .matching import fingerprint
-from .models import Certificate, User
+from .models import Certificate, LedgerBlock, User
 from .security import check_password, hash_password
 
 
@@ -64,7 +65,23 @@ def backfill_fingerprints() -> None:
             print(f"Fingerprinted {len(pending)} existing certificate(s)", flush=True)
 
 
+def backfill_ledger() -> None:
+    """Certificates registered before the ledger existed have no block yet - add them in
+    registration order so the chain covers the registry's full history, not just what's
+    been added since."""
+    with SessionLocal() as db:
+        if db.scalar(select(func.count(LedgerBlock.id))):
+            return
+        certs = db.scalars(select(Certificate).order_by(Certificate.created_at, Certificate.id)).all()
+        for cert in certs:
+            append_block(db, cert.id, cert.hash, cert.holder_name)
+        if certs:
+            db.commit()
+            print(f"Ledger backfilled with {len(certs)} block(s)", flush=True)
+
+
 def run() -> None:
     ensure_schema()
     seed_admin()
     backfill_fingerprints()
+    backfill_ledger()

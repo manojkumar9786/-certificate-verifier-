@@ -28,6 +28,13 @@ PROMPT = (
     'sentence"}. Empty flags list if nothing looks off.'
 )
 
+EXTRACT_PROMPT = (
+    "Read this certificate image and find: the recipient's full name, any certificate/"
+    "reference number printed on it, and the course, event or award title. Reply with "
+    'ONLY this compact JSON, nothing else: {"holderName": "...", "certNumber": "...", '
+    '"title": "..."}. Use "" for a field you cannot find - never guess.'
+)
+
 
 def _to_jpeg(img_bgr) -> bytes:
     h, w = img_bgr.shape[:2]
@@ -56,13 +63,11 @@ def _first_page_image(data: bytes, mime_type: str) -> bytes:
     return _to_jpeg(img)
 
 
-def run_ai_check(data: bytes, mime_type: str) -> dict:
-    """Returns {"flags": [...], "note": "..."}. Raises RuntimeError with a user-facing
-    message on any failure - never silently pretends nothing was found."""
+def _generate(jpeg_b64: str, prompt: str, max_tokens: int) -> str | None:
+    """Calls Gemini with one image + prompt, returns the raw text answer (already
+    stripped of any ```json fencing), or None if nothing usable came back."""
     if not config.GEMINI_API_KEY:
         raise RuntimeError("AI check is not configured")
-
-    jpeg_b64 = base64.b64encode(_first_page_image(data, mime_type)).decode()
 
     resp = httpx.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
@@ -71,11 +76,11 @@ def run_ai_check(data: bytes, mime_type: str) -> dict:
             "contents": [{
                 "parts": [
                     {"inlineData": {"mimeType": "image/jpeg", "data": jpeg_b64}},
-                    {"text": PROMPT},
+                    {"text": prompt},
                 ],
             }],
             "generationConfig": {
-                "maxOutputTokens": MAX_OUTPUT_TOKENS,
+                "maxOutputTokens": max_tokens,
                 # Gemini 3's thinking can't be fully disabled, only turned down - without
                 # this, reasoning tokens alone can exceed maxOutputTokens and leave no
                 # room for the actual JSON answer (seen in testing: MAX_TOKENS with an
@@ -91,17 +96,27 @@ def run_ai_check(data: bytes, mime_type: str) -> dict:
 
     candidates = resp.json().get("candidates") or []
     if not candidates:
-        return {"flags": [], "note": "The model did not return a usable response."}
+        return None
 
     try:
         text = candidates[0]["content"]["parts"][0]["text"].strip()
     except (KeyError, IndexError):
-        return {"flags": [], "note": "Could not read the model's response."}
+        return None
 
     if text.startswith("```"):
         text = text.strip("`")
         if text.startswith("json"):
             text = text[4:]
+    return text
+
+
+def run_ai_check(data: bytes, mime_type: str) -> dict:
+    """Returns {"flags": [...], "note": "..."}. Raises RuntimeError with a user-facing
+    message on any failure - never silently pretends nothing was found."""
+    jpeg_b64 = base64.b64encode(_first_page_image(data, mime_type)).decode()
+    text = _generate(jpeg_b64, PROMPT, MAX_OUTPUT_TOKENS)
+    if text is None:
+        return {"flags": [], "note": "Could not read the model's response."}
 
     try:
         parsed = json.loads(text)
@@ -111,3 +126,25 @@ def run_ai_check(data: bytes, mime_type: str) -> dict:
     flags = [str(f)[:120] for f in parsed.get("flags", [])][:4]
     note = str(parsed.get("note", ""))[:300]
     return {"flags": flags, "note": note}
+
+
+def run_extract(data: bytes, mime_type: str) -> dict:
+    """Best-effort read of holder name / cert number / title off an uploaded certificate,
+    to prefill the admin registration form. Returns "" for any field it can't find -
+    the admin always reviews and can edit before registering, so a wrong guess never
+    reaches the registry on its own."""
+    jpeg_b64 = base64.b64encode(_first_page_image(data, mime_type)).decode()
+    text = _generate(jpeg_b64, EXTRACT_PROMPT, 200)
+    if text is None:
+        return {"holderName": "", "certNumber": "", "title": ""}
+
+    try:
+        parsed = json.loads(text)
+    except ValueError:
+        return {"holderName": "", "certNumber": "", "title": ""}
+
+    return {
+        "holderName": str(parsed.get("holderName", ""))[:120],
+        "certNumber": str(parsed.get("certNumber", ""))[:80],
+        "title": str(parsed.get("title", ""))[:120],
+    }

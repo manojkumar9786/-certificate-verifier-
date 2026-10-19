@@ -20,6 +20,24 @@ not a verification: there is no database of genuine government IDs to compare ag
 labels this result "beta" and an AI opinion, never genuine/fake, and it's a separate, optional action
 next to the real registry check.
 
+Three more things on top of the core verify flow:
+
+- **Tamper-proof ledger** (`backend/app/ledger.py`, `/admin` → *Tamper-proof ledger*) — every
+  registration, manual or generated, is appended as a block chained to the one before it (each
+  block's hash commits to the previous block's hash), the same idea a blockchain ledger uses for
+  immutability, kept local so there's no wallet or gas fee involved. "Verify chain integrity"
+  recomputes every block from its stored fields and reports the first one that no longer matches —
+  proof the registry's history hasn't been edited.
+- **OCR auto-fill** (`POST /api/admin/certificates/extract`, the *Auto-fill from file* button on the
+  registration form) — reads the holder name and certificate number off an uploaded file with Gemini
+  vision before the admin types anything, same free Gemini key as the AI check. The admin still
+  reviews every field before saving.
+- **Batch certificate generator** (`backend/app/cert_generate.py`, `/admin` → *Generate a batch of
+  certificates*) — for an issuer with no existing design: fill in a title, body and a date once, list
+  recipient names, and get one PDF per name (built with ReportLab, QR code to its own public verify
+  page included) registered straight into the registry and the ledger. This is the "one template,
+  many winners" case the app exists for, with no external design tool needed.
+
 | Part | Tech | Free host |
 |---|---|---|
 | Frontend | React (Vite) | Vercel |

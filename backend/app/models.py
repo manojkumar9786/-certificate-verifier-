@@ -45,6 +45,26 @@ class Certificate(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class LedgerBlock(Base):
+    """Tamper-evident hash-chain over every registered certificate. Each block commits to
+    the previous block's hash, so editing or reordering any past entry breaks every block
+    after it — the same chaining idea a blockchain ledger uses, kept local (no gas, no
+    wallet) since the only thing that needs protecting is this app's own registry history.
+    cert_hash/holder_name are copied in rather than read through certificate_id, so a block
+    stays verifiable even after its certificate is deleted from the registry."""
+
+    __tablename__ = "ledger_blocks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idx: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    certificate_id: Mapped[int | None] = mapped_column(ForeignKey("certificates.id"))
+    cert_hash: Mapped[str] = mapped_column(String(64))
+    holder_name: Mapped[str] = mapped_column(String(120))
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    block_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Check(Base):
     """History of every verification a user has run."""
 
